@@ -1,0 +1,25 @@
+{
+    "name": "magedex/magentizer",
+    "description": "",
+    "type": "magento2-module",
+    "version": "0.1.0",
+    "license": [
+
+    ],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "MageDeX\\Magentizer\\": ""
+        }
+    },
+    "extra": {
+        "map": [
+            [
+                "*",
+                "MageDeX/Magentizer"
+            ]
+        ]
+    }
+}
