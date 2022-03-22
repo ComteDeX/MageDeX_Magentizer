@@ -1,6 +1,6 @@
 <?php
 
-namespace MageDeX\Magentizer\Console\Command;
+namespace MageDeX\Magentizer\Console\Command\Create;
 
 use Magento\Framework\Filesystem\DriverPool;
 use Magento\Framework\Module\Dir\Reader;
