@@ -285,8 +285,12 @@ class MakeController extends Command
 
         //Tests if module's directory exists
         if (!file_exists($fullPath)) {
-            mkdir($fullPath);
-            mkdir($fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR);
+            if (!mkdir($fullPath) && !is_dir($fullPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $fullPath));
+            }
+            if (!mkdir($concurrentDirectory = $fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR) && !is_dir($concurrentDirectory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+            }
         } else {
             $output->writeln('A module with the same name already exists');
             return false;
