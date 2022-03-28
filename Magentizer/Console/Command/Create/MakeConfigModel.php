@@ -3,12 +3,12 @@
 namespace MageDeX\Magentizer\Console\Command\Create;
 
 use Magento\Framework\Filesystem\DriverPool;
-use Magento\Framework\Module\Dir\Reader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Module\Dir;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
 use Magento\Framework\App\Area;
 use Magento\Framework\Filesystem\DriverInterface;
@@ -16,13 +16,17 @@ use DOMDocument;
 
 class MakeConfigModel extends Command
 {
+    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+    private const MODULE_TEMPLATES_FILE = 'Templates/modelConfigClass.phptpl';
     private const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:config-model';
 
     private const VENDOR_NAME_ARGUMENT = "vendor's name";
     private const MODULE_NAME_ARGUMENT = "module's name";
     private const SYSTEM_XML = "system.xml";
+    private const MODEL_CONFIG_PATH = "Model/Config";
+    private const MODEL_CONFIG_FILENAME = "Config.php";
 
-    private const CONFIG_PATH = "config_path";
+    private const SYSTEM_CONFIG_PATH = "config_path";
 
     public const RED="\033[31m";
     public const YELLOW="\033[33m";
@@ -31,17 +35,19 @@ class MakeConfigModel extends Command
     public const WHITE="\033[37m";
     public const COLOR_NONE="\e[0m";
 
-    protected Reader            $moduleDirectory;
     protected DirectoryList     $directoryList;
+    protected Dir               $directory;
     protected WriteFactory      $write;
     protected DriverInterface   $driver;
     protected DOMDocument       $domDocument;
 
     protected $rootPath;
+    private $moduleSelfPath;
+    private $templatesPath;
 
     public function __construct(
-        Reader $moduleDirectory,
         DirectoryList $directoryList,
+        Dir $directory,
         WriteFactory $write,
         DriverInterface $driver,
         DOMDocument $domDocument,
@@ -49,11 +55,14 @@ class MakeConfigModel extends Command
     ) {
         parent::__construct($name);
         $this->directoryList = $directoryList;
-        $this->moduleDirectory = $moduleDirectory;
+        $this->directory = $directory;
         $this->write = $write;
         $this->driver = $driver;
         $this->domDocument = $domDocument;
         $this->rootPath = $this->directoryList->getRoot();
+        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
+        $this->templatesPath = $this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_FILE;
+
     }
 
     /**
@@ -65,7 +74,7 @@ class MakeConfigModel extends Command
     ) {
         $vendorName = $input->getArgument(self::VENDOR_NAME_ARGUMENT);
         $moduleName = $input->getArgument(self::MODULE_NAME_ARGUMENT);
-
+;
         while (!$vendorName) {
             $output->writeln(self::GREEN ."What Vendor name for this new module?". self::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
@@ -152,7 +161,7 @@ class MakeConfigModel extends Command
                 return false;
             }
 
-            $this->createConfigClass($configPaths);
+            $this->createConfigClass($configPaths, $vendorPath, $vendorName, $moduleName);
 // etc/module.xml
 //            $moduleXml = [
 //                'filename' => 'module.xml',
@@ -248,18 +257,38 @@ class MakeConfigModel extends Command
         return true;
     }
 
-    private function createConfigClass(array $configPaths) : bool
+    private function createConfigClass(array $configPaths, string $vendorPath,  string $vendorName, string $moduleName) : bool
     {
-        // TODO: ajuster le chemin du fichier
-        // TODO: créer le template
+        $properties = "\n";
+
+        foreach ($configPaths as $configPath => $isBool) {
+            $properties .= "    public const " .mb_strtoupper(str_replace('/','_',$configPath)) . " ='". $configPath ."';\n";
+        }
+        $filePath = implode("/", [
+            $vendorPath,
+            $moduleName,
+            self::MODEL_CONFIG_PATH,
+            ''
+        ]);
+        $template = $this->getTemplate($vendorName, $moduleName, $properties);
+
         try {
-            $newFile = $this->write->create($path ,DriverPool::FILE);
-            $newFile->writeFile($data['filename'], $data['content']);
+            $newFile = $this->write->create($filePath,DriverPool::FILE);
+            $newFile->writeFile(self::MODEL_CONFIG_FILENAME, $template);
         } catch (\Exception $e) {
             echo $e->getMessage();
             return false;
         }
 
         return true;
+    }
+
+    private function getTemplate(string $vendorName, string $moduleName,  $properties) : string
+    {
+        $template = $this->driver->fileGetContents($this->templatesPath);
+        $template = str_replace(['{{namespace}}', '{{properties}}'],
+            [$vendorName . "\\" . $moduleName, $properties], $template);
+
+        return $template;
     }
 }
