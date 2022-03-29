@@ -18,6 +18,8 @@ class MakeConfigModel extends Command
 {
     private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
     private const MODULE_TEMPLATES_FILE = 'Templates/modelConfigClass.phptpl';
+    private const MODULE_TEMPLATES_METHODS_IS_METHOD = 'Templates/MethodsTemplates/isMethod.phptpl';
+    private const MODULE_TEMPLATES_METHODS_GET_METHOD = 'Templates/MethodsTemplates/getMethod.phptpl';
     private const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:config-model';
 
     private const VENDOR_NAME_ARGUMENT = "vendor's name";
@@ -43,7 +45,9 @@ class MakeConfigModel extends Command
 
     protected $rootPath;
     private $moduleSelfPath;
-    private $templatesPath;
+    private $templatesClass;
+    private $templatesMethodIsMethod;
+    private $templatesMethodGetMethod;
 
     public function __construct(
         DirectoryList $directoryList,
@@ -61,7 +65,9 @@ class MakeConfigModel extends Command
         $this->domDocument = $domDocument;
         $this->rootPath = $this->directoryList->getRoot();
         $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
-        $this->templatesPath = $this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_FILE;
+        $this->templatesClass = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_FILE);
+        $this->templatesMethodIsMethod = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_METHODS_IS_METHOD);
+        $this->templatesMethodGetMethod = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_METHODS_GET_METHOD);
 
     }
 
@@ -120,7 +126,7 @@ class MakeConfigModel extends Command
     ) : bool {
 
         $vendorPath = $this->rootPath . '/app/code/' . $vendorName;
-        $fullPath = implode('/', [
+        $systemXMLFullPath = implode('/', [
             $vendorPath,
             $moduleName,
             DirectoryList::CONFIG,
@@ -128,12 +134,28 @@ class MakeConfigModel extends Command
             self::SYSTEM_XML
         ]);
 
-        if(!$this->driver->isFile($fullPath)) {
-            echo "does not exist\n";
+        if(!$this->driver->isExists($systemXMLFullPath)) {
+            echo "system.xml not found. Exiting without writing anything.\n";
             return false;
         }
 
-        $systemXML = json_decode(json_encode(simplexml_load_string($this->driver->fileGetContents($fullPath))), true);
+        $configClassFullPath = implode('/', [
+            $vendorPath,
+            $moduleName,
+            self::MODEL_CONFIG_PATH
+        ]);
+        $configClassPath = implode('/', [
+            $vendorName,
+            $moduleName,
+            self::MODEL_CONFIG_PATH
+        ]);
+
+        if($this->driver->isExists($configClassFullPath)) {
+            echo $configClassPath. ".php file already exists. Exiting without writing anything.\n";
+            return false;
+        }
+
+        $systemXML = json_decode(json_encode(simplexml_load_string($this->driver->fileGetContents($systemXMLFullPath))), true);
 
         $configPaths = [];
             foreach ($systemXML['system']['section'] as $sectionKey => $section) {
@@ -162,115 +184,33 @@ class MakeConfigModel extends Command
             }
 
             $this->createConfigClass($configPaths, $vendorPath, $vendorName, $moduleName);
-// etc/module.xml
-//            $moduleXml = [
-//                'filename' => 'module.xml',
-/*                'content' => '<?xml version="1.0"?>' . "\n" .*/
-//                             '<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'. "\n" .
-//                             '        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">'. "\n" .
-//                             '    <module name="'. $vendorName . '_' . $moduleName . '" setup_version="0.0.1"/>'. "\n" .
-//                             '</config>' . "\n"
-//            ];
-//
-//            $this->createFile($fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR, $moduleXml);
-//            $composerJson = [
-//                'filename' => 'composer.json',
-//                'content' => '{'."\n".
-//                             '    "name": "'.strtolower($vendorName).'/'. strtolower($moduleName).",',"."\n".
-//                             '    "description": "",'."\n".
-//                             '    "type": "magento2-module",'."\n".
-//                             '    "version": "0.1.0",'."\n".
-//                             '    "type": "magento2-module",'."\n".
-//                             '    "license": ['."\n".
-//                             ($license) ? 'MIT' : '' ."\n".
-//                             '    ],'."\n".
-//                             '    "autoload": {'."\n".
-//                             '        "files": ['."\n".
-//                             '            "registration.php"'."\n".
-//                             '        ],'."\n".
-//                             '        "psr-4": {'."\n".
-//                             '            "'. $vendorName .'\\'.$moduleName.'\\": ""'."\n".
-//                             '        }'."\n".
-//                             '    },'."\n".
-//                             '    "extra": {'."\n".
-//                             '        "map": ['."\n".
-//                             '            ['."\n".
-//                             '                "*",'."\n".
-//                             '                "'. $vendorName .'/'.$moduleName.'"'."\n".
-//                             '            ]'."\n".
-//                             '        ]'."\n".
-//                             '    }'."\n".
-//                             '}'
-//            ];
-//
-//            $this->createFile($fullPath, $composerJson);
-//
-//            if ($authorName && $authorName !== '') {
-//                $copyright = ' * Copyright © '. $authorName .'. All rights reserved.'."\n" .
-//                             ' * See COPYING.txt for license details.'."\n";
-//            }
-//            $registrationPhp = [
-//                'filename' => 'registration.php',
-//                'content' => '<?php'."\n".
-//                             '/**'."\n".
-//                             $copyright.
-//                             ' */'."\n".
-//                             ''."\n".
-//                             'use Magento\Framework\Component\ComponentRegistrar;'."\n".
-//                             ''."\n".
-//                             'ComponentRegistrar::register('."\n".
-//                             '    ComponentRegistrar::MODULE,'."\n".
-//                             '    \''. $vendorName .'_'. $moduleName.'\','."\n".
-//                             '    __DIR__'."\n".
-//                             ');'."\n".
-//                             ''."\n"
-//            ];
-//
-//            $this->createFile($fullPath, $registrationPhp);
-//
-//            if ($license) {
-//                $licenseMd = [
-//                    'filename' => 'license.md',
-//                    'content' => "The MIT License\n".
-//                    "\n".
-//                    "Copyright (c) " . date("Y") . " " . $authorName . "\n".
-//                    "\n".
-//                    "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n".
-//                    "\n".
-//                    "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n".
-//                    "\n".
-//                    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n".
-//                    ""
-//                ];
-//                $this->createFile($fullPath, $licenseMd);
-//            }
-//
-//            $readMeMd = [
-//                'filename' => 'README.md',
-//                'content' => "# ". $moduleName."\n".
-//                             "\n".
-//                             "## Introductio\n".
-//                             $moduleName . " is a module for Magento 2. Enjoy !\n"
-//            ];
-//
-//            $this->createFile($fullPath, $readMeMd);
+
         return true;
     }
 
     private function createConfigClass(array $configPaths, string $vendorPath,  string $vendorName, string $moduleName) : bool
     {
         $properties = "\n";
+        $methods = "\n";
 
         foreach ($configPaths as $configPath => $isBool) {
-            $properties .= "    public const " .mb_strtoupper(str_replace('/','_',$configPath)) . " ='". $configPath ."';\n";
+            $constName = mb_strtoupper(str_replace('/','_',$configPath));
+            $properties .= "    public const " . $constName . " ='". $configPath ."';\n";
+
+            $configPathArray = explode('/', $configPath);
+            $methods .= str_replace(
+                ['{{config}}','{{config_const}}'], [$this->toCamelCase(end($configPathArray)), $constName],
+                ($isBool) ? $this->templatesMethodIsMethod : $this->templatesMethodGetMethod
+            );
         }
+
         $filePath = implode("/", [
             $vendorPath,
             $moduleName,
             self::MODEL_CONFIG_PATH,
             ''
         ]);
-        $template = $this->getTemplate($vendorName, $moduleName, $properties);
+        $template = $this->getTemplate($vendorName, $moduleName, $properties, trim($methods));
 
         try {
             $newFile = $this->write->create($filePath,DriverPool::FILE);
@@ -283,12 +223,14 @@ class MakeConfigModel extends Command
         return true;
     }
 
-    private function getTemplate(string $vendorName, string $moduleName,  $properties) : string
+    private function getTemplate(string $vendorName, string $moduleName,  $properties, $methods) : string
     {
-        $template = $this->driver->fileGetContents($this->templatesPath);
-        $template = str_replace(['{{namespace}}', '{{properties}}'],
-            [$vendorName . "\\" . $moduleName, $properties], $template);
+        return str_replace(['{{namespace}}', '{{properties}}', '{{methods}}'],
+            [$vendorName . "\\" . $moduleName, $properties, $methods], $this->templatesClass);
+    }
 
-        return $template;
+    private function toCamelCase(string $stringToCamelCase) : string
+    {
+        return str_replace(' ', '', ucwords(str_replace('_', ' ', $stringToCamelCase)));
     }
 }
