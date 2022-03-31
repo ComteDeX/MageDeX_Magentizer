@@ -17,8 +17,7 @@ Raise a new [request](https://github.com/opengento/magento2-snowflake/issues) to
 
 ## Authors
 
-- **OpenGento Community** - *Lead* - [![Twitter Follow](https://img.shields.io/twitter/follow/opengento.svg?style=social)](https://twitter.com/opengento)
-- **Contributors** - *Contributor* - [![GitHub contributors](https://img.shields.io/github/contributors/opengento/magento2-snowflake.svg?style=flat-square)](https://github.com/opengento/magento2-snowflake/graphs/contributors)
+- **Comte de X** - *Lead* - [![Twitter Follow](https://img.shields.io/twitter/follow/camillexmorgan.svg?style=social)](https://twitter.com/camillexmorgan)
 
 ## License
 

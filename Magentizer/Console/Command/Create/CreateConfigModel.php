@@ -14,13 +14,13 @@ use Magento\Framework\App\Area;
 use Magento\Framework\Filesystem\DriverInterface;
 use DOMDocument;
 
-class MakeConfigModel extends Command
+class CreateConfigModel extends Command
 {
-    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
-    private const MODULE_TEMPLATES_FILE = 'Templates/modelConfigClass.phptpl';
-    private const MODULE_TEMPLATES_METHODS_IS_METHOD = 'Templates/MethodsTemplates/isMethod.phptpl';
-    private const MODULE_TEMPLATES_METHODS_GET_METHOD = 'Templates/MethodsTemplates/getMethod.phptpl';
     private const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:config-model';
+    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+    private const MODULE_TEMPLATES_FILE = 'Templates/CreateConfigModel/CreateConfigModel.php.tpl';
+    private const MODULE_TEMPLATES_METHODS_IS_METHOD = 'Templates/CreateConfigModel/MethodsTemplates/isMethod.php.tpl';
+    private const MODULE_TEMPLATES_METHODS_GET_METHOD = 'Templates/CreateConfigModel/MethodsTemplates/getMethod.php.tpl';
 
     private const VENDOR_NAME_ARGUMENT = "vendor's name";
     private const MODULE_NAME_ARGUMENT = "module's name";
@@ -49,6 +49,16 @@ class MakeConfigModel extends Command
     private $templatesMethodIsMethod;
     private $templatesMethodGetMethod;
 
+    /**
+     * MakeConfigModel constructor.
+     * @param DirectoryList $directoryList
+     * @param Dir $directory
+     * @param WriteFactory $write
+     * @param DriverInterface $driver
+     * @param DOMDocument $domDocument
+     * @param string|null $name
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
     public function __construct(
         DirectoryList $directoryList,
         Dir $directory,
@@ -94,10 +104,6 @@ class MakeConfigModel extends Command
         }
 
         $this->createModule($vendorName, $moduleName, $output);
-//        if ($this->createModule($vendorName, $moduleName, $output)) {
-//            $output->writeln("Please welcome " . $correctedVendorName . "_" . $moduleName . "!");
-//            $output->writeln(self::BLUE . "Don’t forget to execute ". self::COLOR_NONE . "bin/magento setup:upgrade" . self::BLUE . " to make it work properly.");
-//        }
     }
 
     /**
@@ -188,8 +194,19 @@ class MakeConfigModel extends Command
         return true;
     }
 
-    private function createConfigClass(array $configPaths, string $vendorPath,  string $vendorName, string $moduleName) : bool
-    {
+    /**
+     * @param array $configPaths
+     * @param string $vendorPath
+     * @param string $vendorName
+     * @param string $moduleName
+     * @return bool
+     */
+    private function createConfigClass(
+        array $configPaths,
+        string $vendorPath,
+        string $vendorName,
+        string $moduleName
+    ) : bool {
         $properties = "\n";
         $methods = "\n";
 
@@ -223,14 +240,31 @@ class MakeConfigModel extends Command
         return true;
     }
 
-    private function getTemplate(string $vendorName, string $moduleName,  $properties, $methods) : string
-    {
+    /**
+     * @param string $vendorName
+     * @param string $moduleName
+     * @param $properties
+     * @param $methods
+     * @return string
+     */
+    private function getTemplate(
+        string $vendorName,
+        string $moduleName,
+        $properties,
+        $methods
+    ) : string {
         return str_replace(['{{namespace}}', '{{properties}}', '{{methods}}'],
             [$vendorName . "\\" . $moduleName, $properties, $methods], $this->templatesClass);
     }
 
-    private function toCamelCase(string $stringToCamelCase) : string
-    {
+    /**
+     * @param string $stringToCamelCase
+     * @return string
+     */
+    private function toCamelCase(
+        string $stringToCamelCase
+    ) : string {
         return str_replace(' ', '', ucwords(str_replace('_', ' ', $stringToCamelCase)));
     }
 }
+

@@ -4,7 +4,9 @@ declare (strict_types=1);
 
 namespace MageDeX\Magentizer\Console\Command\Create;
 
+use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Filesystem\DriverPool;
+use Magento\Framework\Module\Dir;
 use Magento\Framework\Module\Dir\Reader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,9 +15,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
 
-class MakeController extends Command
+class CreateController extends Command
 {
     const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:controller';
+
+    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+    private const MODULE_TEMPLATES_COMPOSER  = 'Templates/CreateModule/composer.json.tpl';
+    private const MODULE_TEMPLATES_LICENSE = 'Templates/CreateModule/LICENSE.tpl';
+    private const MODULE_TEMPLATES_README = 'Templates/CreateModule/readme.md.tpl';
+    private const MODULE_TEMPLATES_REGISTRATION = 'Templates/CreateModule/registration.php.tpl';
 
     const VENDOR_NAME_ARGUMENT = "vendor's name";
     const MODULE_NAME_ARGUMENT = "module's name";
@@ -28,36 +36,41 @@ class MakeController extends Command
     const WHITE="\033[37m";
     const COLOR_NONE="\e[0m";
 
-    /**
-     * @var Reader
-     */
-    protected $moduleDirectory;
+    protected Reader            $moduleDirectory;
+    protected DirectoryList     $directoryList;
+    protected Dir               $directory;
+    protected DriverInterface   $driver;
+    protected WriteFactory      $write;
 
-    /**
-     * @var DirectoryList
-     */
-    protected $directoryList;
-
-    /**
-     * @var WriteFactory
-     */
-    protected $write;
 
     protected $rootPath;
+    private   $templatesModuleTemplatesComposer;
+    private   $templatesModuleTemplatesLicense;
+    private   $templatesModuleTemplatesReadme;
+    private   $templatesModuleTemplatesRegistration;
 
     public function __construct(
         Reader $moduleDirectory,
         DirectoryList $directoryList,
+        Dir $directory,
+        DriverInterface $driver,
         WriteFactory $write,
         string $name = null
     ) {
         parent::__construct($name);
         $this->directoryList = $directoryList;
         $this->moduleDirectory = $moduleDirectory;
+        $this->directory = $directory;
         $this->write = $write;
+        $this->driver = $driver;
         $this->rootPath = $this->directoryList->getRoot();
+        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
+        $this->templatesModuleTemplatesComposer = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_COMPOSER);;
+        $this->templatesModuleTemplatesLicense = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_LICENSE);;
+        $this->templatesModuleTemplatesReadme = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_README);;
+        $this->templatesModuleTemplatesRegistration = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_REGISTRATION);;
     }
-
+    // TODO : remplacer le code des fichiers en dur par les templates
     /**
      * {@inheritdoc}
      */
