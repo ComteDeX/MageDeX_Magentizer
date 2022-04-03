@@ -1,12 +1,8 @@
 <?php
 
-declare (strict_types=1);
-
 namespace MageDeX\Magentizer\Console\Command\Create;
 
-use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Filesystem\DriverPool;
-use Magento\Framework\Module\Dir;
 use Magento\Framework\Module\Dir\Reader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,18 +11,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
 
-class CreateController extends Command
+class CreateSystemConfig extends Command
 {
-    const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:controller';
-
-    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
-    private const MODULE_TEMPLATES_COMPOSER  = 'Templates/CreateModule/composer.json.tpl';
-    private const MODULE_TEMPLATES_LICENSE = 'Templates/CreateModule/LICENSE.tpl';
-    private const MODULE_TEMPLATES_README = 'Templates/CreateModule/readme.md.tpl';
-    private const MODULE_TEMPLATES_REGISTRATION = 'Templates/CreateModule/registration.php.tpl';
-
-    const VENDOR_NAME_ARGUMENT = "vendor's name";
-    const MODULE_NAME_ARGUMENT = "module's name";
+    const COMMAND_MAGENTIZER_CREATE_SYSTEM = 'magentizer:create:system';
+    const SYSTEM_TAB = 'tab';
+    const SYSTEM_SECTION = 'section';
+    const SYSTEM_GROUP = 'group';
     const AUTHOR_NAME_ARGUMENT = "author's name";
 
     const RED="\033[31m";
@@ -36,41 +26,36 @@ class CreateController extends Command
     const WHITE="\033[37m";
     const COLOR_NONE="\e[0m";
 
-    protected Reader            $moduleDirectory;
-    protected DirectoryList     $directoryList;
-    protected Dir               $directory;
-    protected DriverInterface   $driver;
-    protected WriteFactory      $write;
+    /**
+     * @var Reader
+     */
+    protected $moduleDirectory;
 
+    /**
+     * @var DirectoryList
+     */
+    protected $directoryList;
+
+    /**
+     * @var WriteFactory
+     */
+    protected $write;
 
     protected $rootPath;
-    private   $templatesModuleTemplatesComposer;
-    private   $templatesModuleTemplatesLicense;
-    private   $templatesModuleTemplatesReadme;
-    private   $templatesModuleTemplatesRegistration;
 
     public function __construct(
         Reader $moduleDirectory,
         DirectoryList $directoryList,
-        Dir $directory,
-        DriverInterface $driver,
         WriteFactory $write,
         string $name = null
     ) {
         parent::__construct($name);
         $this->directoryList = $directoryList;
         $this->moduleDirectory = $moduleDirectory;
-        $this->directory = $directory;
         $this->write = $write;
-        $this->driver = $driver;
         $this->rootPath = $this->directoryList->getRoot();
-        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
-        $this->templatesModuleTemplatesComposer = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_COMPOSER);;
-        $this->templatesModuleTemplatesLicense = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_LICENSE);;
-        $this->templatesModuleTemplatesReadme = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_README);;
-        $this->templatesModuleTemplatesRegistration = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_REGISTRATION);;
     }
-    // TODO : remplacer le code des fichiers en dur par les templates
+
     /**
      * {@inheritdoc}
      */
@@ -78,55 +63,44 @@ class CreateController extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        $vendorName = $input->getArgument(self::VENDOR_NAME_ARGUMENT);
-        $moduleName = $input->getArgument(self::MODULE_NAME_ARGUMENT);
-        $authorName = $input->getArgument(self::AUTHOR_NAME_ARGUMENT);
+        $tabName = $input->getArgument(self::SYSTEM_TAB);
+        $sectionName = $input->getArgument(self::SYSTEM_SECTION);
+        $groupName = $input->getArgument(self::SYSTEM_GROUP);
 
-        while (!$vendorName) {
-            $output->writeln(self::GREEN ."What Vendor name for this new module?". self::COLOR_NONE);
+        while (!$tabName) {
+            $output->writeln("What is your tab name for this new system.xml?");
             $handle = fopen("php://stdin", "r");
-            $vendorName = trim(fgets($handle));
+            $tabName = trim(fgets($handle));
         }
 
-        $correctedVendorName = $this->cleanModuleName($vendorName);
-        if ($correctedVendorName !== $vendorName) {
-            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: ". self::COLOR_NONE . $correctedVendorName);
+        $correctedVendorName = $this->cleanModuleName($tabName);
+        if ($correctedVendorName !== $tabName) {
+            $output->writeln("Vendor's name has been modified this way to comply with PSR: " . $correctedVendorName);
         }
 
-        while (!$moduleName) {
-            $output->writeln(self::GREEN . "What Module name?" . self::COLOR_NONE);
+        while (!$sectionName) {
+            $output->writeln("What Module name?");
             $handle = fopen("php://stdin", "r");
-            $moduleName = trim(fgets($handle));
+            $sectionName = trim(fgets($handle));
         }
 
-        $correctedModuleName = $this->cleanModuleName($moduleName);
-        if ($correctedModuleName !== $moduleName) {
-            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName . self::COLOR_NONE);
+        $correctedModuleName = $this->cleanModuleName($sectionName);
+        if ($correctedModuleName !== $sectionName) {
+            $output->writeln("Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName);
         }
 
-        if (!$authorName) {
-            $output->writeln(self::GREEN . "An author name for the copyright?" . self::COLOR_NONE);
+        if (!$groupName) {
+            $output->writeln("An author name for the copyright?");
             $handle = fopen("php://stdin", "r");
-            $authorName = trim(fgets($handle));
+            $groupName = trim(fgets($handle));
         }
 
-        $license = false;
-        if ($authorName !== '') {
-            $output->writeln(self::GREEN . "Add a MIT license file? [Y/n]" . self::COLOR_NONE);
-            $handle = fopen("php://stdin", "r");
-            $handle = trim(fgets($handle));
-            switch (strtolower($handle)) {
-                case "":
-                case "y":
-                case "yes":
-                    $license = true;
-                    break;
-            }
-        }
+        $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
+        $output->writeln("EEEEEEEEEEEEEEEEEEEEEEE");
+        $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
 
-        if ($this->createModule($correctedVendorName, $correctedModuleName, $authorName, $license, $output)) {
+        if ($this->createSystemXmlFile($authorName, $correctedVendorName, $correctedModuleName, $license, $output)) {
             $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
-            $output->writeln(self::BLUE . "Don’t forget to execute ". self::COLOR_NONE . "bin/magento setup:upgrade" . self::BLUE . " to make it work properly.");
         }
     }
 
@@ -135,12 +109,13 @@ class CreateController extends Command
      */
     protected function configure()
     {
-        $this->setName(self::COMMAND_MAGENTIZER_CREATE_CONTROLLER);
-        $this->setDescription("Quickly create a module without messing with bothering stuffs");
+        $this->setName(self::COMMAND_MAGENTIZER_CREATE_SYSTEM);
+        $this->setDescription("Quickly create a system.xml, config.xml and config model class");
         $this->setDefinition([
-            new InputArgument(self::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
-            new InputArgument(self::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
-            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "author's name"),
+            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Author's Name for copyright data"),
+            new InputArgument(self::SYSTEM_TAB, InputArgument::OPTIONAL, "Tab's Name"),
+            new InputArgument(self::SYSTEM_SECTION, InputArgument::OPTIONAL, "Section's Name"),
+            new InputArgument(self::SYSTEM_GROUP, InputArgument::OPTIONAL, "Group's name"),
         ]);
         parent::configure();
     }
@@ -165,21 +140,21 @@ class CreateController extends Command
 
     /**
      * @param string $vendorName
-     * @param string $moduleName
+     * @param string $sectionName
      * @return bool
      */
-    private function createModule(
+    private function createSystemXmlFile(
         string $vendorName,
-        string $moduleName,
+        string $sectionName,
         string $authorName,
         bool $license,
         OutputInterface $output
     ) : bool {
 
         $vendorPath = $this->rootPath . '/app/code/' . $vendorName;
-        $fullPath = $vendorPath . '/' . $moduleName;
+        $fullPath = $vendorPath . '/' . $sectionName;
 
-        if($this->isModuleAlreadyExisting(
+        if($this->isSystemXmlFileAlreadyExists(
             $vendorPath,
             $fullPath,
             $output
@@ -187,10 +162,15 @@ class CreateController extends Command
             // etc/module.xml
             $moduleXml = [
                 'filename' => 'module.xml',
-                'content' => '<?xml version="1.0"?>' . "\n" .
+                'content' => '<!--' . "\n" .
+                             '/**' . "\n" .
+                             ' * Copyright © '. $authorName .', All rights reserved.' . "\n" .
+                             ' * See LICENSE bundled with this library for license details.' . "\n" .
+                             ' */' . "\n" .
+                             '-->' . "\n" .
                              '<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'. "\n" .
-                             '        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">'. "\n" .
-                             '    <module name="'. $vendorName . '_' . $moduleName . '" setup_version="0.0.1"/>'. "\n" .
+                             '        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">'. "\n" .
+                             '    <module name="'. $vendorName . '_' . $sectionName . '" setup_version="0.0.1"/>'. "\n" .
                              '</config>' . "\n"
             ];
 
@@ -198,27 +178,26 @@ class CreateController extends Command
             $composerJson = [
                 'filename' => 'composer.json',
                 'content' => '{'."\n".
-                             '    "name": "'.strtolower($vendorName).'/'. strtolower($moduleName).",',"."\n".
+                             '    "name": "'.strtolower($vendorName).'/'. strtolower($sectionName).",',"."\n".
                              '    "description": "",'."\n".
                              '    "type": "magento2-module",'."\n".
                              '    "version": "0.1.0",'."\n".
-                             '    "type": "magento2-module",'."\n".
                              '    "license": ['."\n".
-                             ($license) ? 'MIT' : '' ."\n".
+                             ''."\n".
                              '    ],'."\n".
                              '    "autoload": {'."\n".
                              '        "files": ['."\n".
                              '            "registration.php"'."\n".
                              '        ],'."\n".
                              '        "psr-4": {'."\n".
-                             '            "'. $vendorName .'\\'.$moduleName.'\\": ""'."\n".
+                             '            "'. $vendorName .'\\'.$sectionName.'\\": ""'."\n".
                              '        }'."\n".
                              '    },'."\n".
                              '    "extra": {'."\n".
                              '        "map": ['."\n".
                              '            ['."\n".
                              '                "*",'."\n".
-                             '                "'. $vendorName .'/'.$moduleName.'"'."\n".
+                             '                "'. $vendorName .'/'.$sectionName.'"'."\n".
                              '            ]'."\n".
                              '        ]'."\n".
                              '    }'."\n".
@@ -242,7 +221,7 @@ class CreateController extends Command
                              ''."\n".
                              'ComponentRegistrar::register('."\n".
                              '    ComponentRegistrar::MODULE,'."\n".
-                             '    \''. $vendorName .'_'. $moduleName.'\','."\n".
+                             '    \''. $vendorName .'_'. $sectionName.'\','."\n".
                              '    __DIR__'."\n".
                              ');'."\n".
                              ''."\n"
@@ -269,10 +248,10 @@ class CreateController extends Command
 
             $readMeMd = [
                 'filename' => 'README.md',
-                'content' => "# ". $moduleName."\n".
+                'content' => "# ". $sectionName."\n".
                              "\n".
                              "## Introductio\n".
-                             $moduleName . " is a module for Magento 2. Enjoy !\n"
+                             $sectionName . " is a module for Magento 2. Enjoy !\n"
             ];
 
             $this->createFile($fullPath, $readMeMd);
@@ -288,24 +267,21 @@ class CreateController extends Command
      * @param string $modulePath
      * @return bool
      */
-    private function isModuleAlreadyExisting(
+    private function isSystemXmlFileAlreadyExists(
         string $vendorPath,
         string $fullPath,
         OutputInterface $output
     ) : bool {
         //Test if vendor's directory exists
         if (!file_exists($vendorPath)) {
+            $output->writeln($vendorPath);
             mkdir($vendorPath);
         }
 
         //Tests if module's directory exists
         if (!file_exists($fullPath)) {
-            if (!mkdir($fullPath) && !is_dir($fullPath)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $fullPath));
-            }
-            if (!mkdir($concurrentDirectory = $fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR) && !is_dir($concurrentDirectory)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
-            }
+            mkdir($fullPath);
+            mkdir($fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR);
         } else {
             $output->writeln('A module with the same name already exists');
             return false;

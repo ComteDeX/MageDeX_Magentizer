@@ -50,7 +50,7 @@ class CreateConfigModel extends Command
     private $templatesMethodGetMethod;
 
     /**
-     * MakeConfigModel constructor.
+     * CreateConfigModel constructor.
      * @param DirectoryList $directoryList
      * @param Dir $directory
      * @param WriteFactory $write

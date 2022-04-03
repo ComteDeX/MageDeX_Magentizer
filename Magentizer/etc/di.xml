@@ -4,9 +4,9 @@
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="MakeController" xsi:type="object">MageDeX\Magentizer\Console\Command\Create\MakeController</item>
-                <item name="MakeSystemConfig" xsi:type="object">MageDeX\Magentizer\Console\Command\Create\MakeSystemConfig</item>
-                <item name="MakeConfigModel" xsi:type="object">MageDeX\Magentizer\Console\Command\Create\MakeConfigModel</item>
+                <item name="CreateNewController"   xsi:type="object">MageDeX\Magentizer\Console\Command\Create\CreateNewModule</item>
+                <item name="CreateSystemConfig" xsi:type="object">MageDeX\Magentizer\Console\Command\Create\CreateSystemConfig</item>
+                <item name="CreateConfigModel"  xsi:type="object">MageDeX\Magentizer\Console\Command\Create\CreateConfigModel</item>
 <!--                <item name="HelloCustom" xsi:type="object">MageDeX\Magentizer\Console\Command\HelloCustom</item>-->
             </argument>
         </arguments>

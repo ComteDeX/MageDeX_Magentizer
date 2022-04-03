@@ -1,15 +1,17 @@
-# Module Maker for Magento 2
+# Magentizer for Magento 2
 
-[![Latest Stable Version](https://img.shields.io/packagist/v/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-module-make)
+[![Latest Stable Version](https://img.shields.io/packagist/v/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-magentizer)
 [![License: MIT](https://img.shields.io/github/license/opengento/magento2-snowflake.svg?style=flat-square)](./LICENSE)
-[![Packagist](https://img.shields.io/packagist/dt/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-module-make/stats)
-[![Packagist](https://img.shields.io/packagist/dm/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-module-make/stats)
+[![Packagist](https://img.shields.io/packagist/dt/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-magentizer/stats)
+[![Packagist](https://img.shields.io/packagist/dm/opengento/module-snowflake.svg?style=flat-square)](https://packagist.org/packages/magedex/module-magentizer/stats)
 
 ## Introduction
-Module Maker is an easy CLI way to create new module for Magento 2
+Magentizer is an easy CLI way to create new module, system.xml, config classes for Magento 2
 
 ## Commands
-`bin/magento magentizer:make`
+`bin/magento magentizer:create:module`
+`bin/magento magentizer:create:system`
+`bin/magento magentizer:create:config-model`
 
 ## Support
 

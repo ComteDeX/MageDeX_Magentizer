@@ -1,8 +1,12 @@
 <?php
 
+declare (strict_types=1);
+
 namespace MageDeX\Magentizer\Console\Command\Create;
 
+use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Filesystem\DriverPool;
+use Magento\Framework\Module\Dir;
 use Magento\Framework\Module\Dir\Reader;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,49 +15,61 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
 
-class MakeSystemConfig extends Command
+class CreateNewModule extends Command
 {
-    const COMMAND_MAGENTIZER_CREATE_SYSTEM = 'magentizer:create:system';
-    const SYSTEM_TAB = 'tab';
-    const SYSTEM_SECTION = 'section';
-    const SYSTEM_GROUP = 'group';
-    const AUTHOR_NAME_ARGUMENT = "author's name";
+    public const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:module';
+    public const APP_CODE = '/app/code/';
 
-    const RED="\033[31m";
-    const YELLOW="\033[33m";
-    const GREEN="\033[32m";
-    const BLUE="\033[34m";
-    const WHITE="\033[37m";
-    const COLOR_NONE="\e[0m";
+    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+    private const MODULE_TEMPLATES_COMPOSER  = 'Templates/CreateModule/composer.json.tpl';
+    private const MODULE_TEMPLATES_LICENSE = 'Templates/CreateModule/LICENSE.tpl';
+    private const MODULE_TEMPLATES_README = 'Templates/CreateModule/readme.md.tpl';
+    private const MODULE_TEMPLATES_REGISTRATION = 'Templates/CreateModule/registration.php.tpl';
 
-    /**
-     * @var Reader
-     */
-    protected $moduleDirectory;
+    private const VENDOR_NAME_ARGUMENT = "vendor's name";
+    private const MODULE_NAME_ARGUMENT = "module's name";
+    private const AUTHOR_NAME_ARGUMENT = "author's name";
 
-    /**
-     * @var DirectoryList
-     */
-    protected $directoryList;
+    private const RED="\033[31m";
+    private const YELLOW="\033[33m";
+    private const GREEN="\033[32m";
+    private const BLUE="\033[34m";
+    private const WHITE="\033[37m";
+    private const COLOR_NONE="\e[0m";
 
-    /**
-     * @var WriteFactory
-     */
-    protected $write;
+    protected Reader            $moduleDirectory;
+    protected DirectoryList     $directoryList;
+    protected Dir               $directory;
+    protected DriverInterface   $driver;
+    protected WriteFactory      $write;
+
 
     protected $rootPath;
+    private   $templatesModuleTemplatesComposer;
+    private   $templatesModuleTemplatesLicense;
+    private   $templatesModuleTemplatesReadme;
+    private   $templatesModuleTemplatesRegistration;
 
     public function __construct(
         Reader $moduleDirectory,
         DirectoryList $directoryList,
+        Dir $directory,
+        DriverInterface $driver,
         WriteFactory $write,
         string $name = null
     ) {
         parent::__construct($name);
         $this->directoryList = $directoryList;
         $this->moduleDirectory = $moduleDirectory;
+        $this->directory = $directory;
         $this->write = $write;
+        $this->driver = $driver;
         $this->rootPath = $this->directoryList->getRoot();
+        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
+        $this->templatesModuleTemplatesComposer = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_COMPOSER);;
+        $this->templatesModuleTemplatesLicense = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_LICENSE);;
+        $this->templatesModuleTemplatesReadme = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_README);;
+        $this->templatesModuleTemplatesRegistration = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_REGISTRATION);;
     }
 
     /**
@@ -63,44 +79,68 @@ class MakeSystemConfig extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        $tabName = $input->getArgument(self::SYSTEM_TAB);
-        $sectionName = $input->getArgument(self::SYSTEM_SECTION);
-        $groupName = $input->getArgument(self::SYSTEM_GROUP);
+        $vendorName = $input->getArgument(self::VENDOR_NAME_ARGUMENT);
+        $moduleName = $input->getArgument(self::MODULE_NAME_ARGUMENT);
+        $authorName = $input->getArgument(self::AUTHOR_NAME_ARGUMENT);
 
-        while (!$tabName) {
-            $output->writeln("What is your tab name for this new system.xml?");
+        while (!$vendorName) {
+            $output->writeln(self::GREEN ."What Vendor name for this new module?". self::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
-            $tabName = trim(fgets($handle));
+            $vendorName = trim(fgets($handle));
         }
 
-        $correctedVendorName = $this->cleanModuleName($tabName);
-        if ($correctedVendorName !== $tabName) {
-            $output->writeln("Vendor's name has been modified this way to comply with PSR: " . $correctedVendorName);
+        $correctedVendorName = $this->cleanModuleName($vendorName);
+        if ($correctedVendorName !== $vendorName) {
+            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: ". self::COLOR_NONE . $correctedVendorName);
         }
 
-        while (!$sectionName) {
-            $output->writeln("What Module name?");
+        while (!$moduleName) {
+            $output->writeln(self::GREEN . "What Module name?" . self::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
-            $sectionName = trim(fgets($handle));
+            $moduleName = trim(fgets($handle));
         }
 
-        $correctedModuleName = $this->cleanModuleName($sectionName);
-        if ($correctedModuleName !== $sectionName) {
-            $output->writeln("Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName);
+        $correctedModuleName = $this->cleanModuleName($moduleName);
+        if ($correctedModuleName !== $moduleName) {
+            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName . self::COLOR_NONE);
         }
 
-        if (!$groupName) {
-            $output->writeln("An author name for the copyright?");
+        $vendorPath = $this->rootPath . self::APP_CODE . $vendorName;
+        $fullPath = $vendorPath . '/' . $moduleName;
+
+        if($this->isModuleAlreadyExisting(
+            $vendorName,
+            $fullPath
+        )) {
+            $output->writeln(self::RED . 'A module with the same name already exists!' . self::COLOR_NONE);
+
+            return false;
+        }
+
+
+        if (!$authorName) {
+            $output->writeln(self::GREEN . "An author name for the copyright?" . self::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
-            $groupName = trim(fgets($handle));
+            $authorName = trim(fgets($handle));
         }
 
-        $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
-        $output->writeln("EEEEEEEEEEEEEEEEEEEEEEE");
-        $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
+        $license = false;
+        if ($authorName !== '') {
+            $output->writeln(self::GREEN . "Add a MIT license file? [Y/n]" . self::COLOR_NONE);
+            $handle = fopen("php://stdin", "r");
+            $handle = trim(fgets($handle));
+            switch (strtolower($handle)) {
+                case "":
+                case "y":
+                case "yes":
+                    $license = true;
+                    break;
+            }
+        }
 
-        if ($this->createSystemXmlFile($authorName, $correctedVendorName, $correctedModuleName, $license, $output)) {
+        if ($this->createModule($correctedVendorName, $correctedModuleName, $authorName, $license, $output)) {
             $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
+            $output->writeln(self::BLUE . "Don’t forget to execute ". self::COLOR_NONE . "bin/magento setup:upgrade" . self::BLUE . " to make it work properly.");
         }
     }
 
@@ -109,13 +149,12 @@ class MakeSystemConfig extends Command
      */
     protected function configure()
     {
-        $this->setName(self::COMMAND_MAGENTIZER_CREATE_SYSTEM);
-        $this->setDescription("Quickly create a system.xml, config.xml and config model class");
+        $this->setName(self::COMMAND_MAGENTIZER_CREATE_CONTROLLER);
+        $this->setDescription("Quickly create a module without messing with bothering stuffs");
         $this->setDefinition([
-            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Author's Name for copyright data"),
-            new InputArgument(self::SYSTEM_TAB, InputArgument::OPTIONAL, "Tab's Name"),
-            new InputArgument(self::SYSTEM_SECTION, InputArgument::OPTIONAL, "Section's Name"),
-            new InputArgument(self::SYSTEM_GROUP, InputArgument::OPTIONAL, "Group's name"),
+            new InputArgument(self::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
+            new InputArgument(self::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
+            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "author's name"),
         ]);
         parent::configure();
     }
@@ -140,37 +179,27 @@ class MakeSystemConfig extends Command
 
     /**
      * @param string $vendorName
-     * @param string $sectionName
+     * @param string $moduleName
      * @return bool
      */
-    private function createSystemXmlFile(
+    private function createModule(
         string $vendorName,
-        string $sectionName,
+        string $moduleName,
         string $authorName,
         bool $license,
         OutputInterface $output
     ) : bool {
 
-        $vendorPath = $this->rootPath . '/app/code/' . $vendorName;
-        $fullPath = $vendorPath . '/' . $sectionName;
+        $vendorPath = $this->rootPath . self::APP_CODE . $vendorName;
+        $fullPath = $vendorPath . '/' . $moduleName;
 
-        if($this->isSystemXmlFileAlreadyExists(
-            $vendorPath,
-            $fullPath,
-            $output
-        )) {
-            // etc/module.xml
+        // etc/module.xml
             $moduleXml = [
                 'filename' => 'module.xml',
-                'content' => '<!--' . "\n" .
-                             '/**' . "\n" .
-                             ' * Copyright © '. $authorName .', All rights reserved.' . "\n" .
-                             ' * See LICENSE bundled with this library for license details.' . "\n" .
-                             ' */' . "\n" .
-                             '-->' . "\n" .
+                'content' => '<?xml version="1.0"?>' . "\n" .
                              '<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'. "\n" .
-                             '        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">'. "\n" .
-                             '    <module name="'. $vendorName . '_' . $sectionName . '" setup_version="0.0.1"/>'. "\n" .
+                             '        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">'. "\n" .
+                             '    <module name="'. $vendorName . '_' . $moduleName . '" setup_version="0.0.1"/>'. "\n" .
                              '</config>' . "\n"
             ];
 
@@ -178,26 +207,27 @@ class MakeSystemConfig extends Command
             $composerJson = [
                 'filename' => 'composer.json',
                 'content' => '{'."\n".
-                             '    "name": "'.strtolower($vendorName).'/'. strtolower($sectionName).",',"."\n".
+                             '    "name": "'.strtolower($vendorName).'/'. strtolower($moduleName).",',"."\n".
                              '    "description": "",'."\n".
                              '    "type": "magento2-module",'."\n".
                              '    "version": "0.1.0",'."\n".
+                             '    "type": "magento2-module",'."\n".
                              '    "license": ['."\n".
-                             ''."\n".
+                             ($license) ? 'MIT' : '' ."\n".
                              '    ],'."\n".
                              '    "autoload": {'."\n".
                              '        "files": ['."\n".
                              '            "registration.php"'."\n".
                              '        ],'."\n".
                              '        "psr-4": {'."\n".
-                             '            "'. $vendorName .'\\'.$sectionName.'\\": ""'."\n".
+                             '            "'. $vendorName .'\\'.$moduleName.'\\": ""'."\n".
                              '        }'."\n".
                              '    },'."\n".
                              '    "extra": {'."\n".
                              '        "map": ['."\n".
                              '            ['."\n".
                              '                "*",'."\n".
-                             '                "'. $vendorName .'/'.$sectionName.'"'."\n".
+                             '                "'. $vendorName .'/'.$moduleName.'"'."\n".
                              '            ]'."\n".
                              '        ]'."\n".
                              '    }'."\n".
@@ -221,7 +251,7 @@ class MakeSystemConfig extends Command
                              ''."\n".
                              'ComponentRegistrar::register('."\n".
                              '    ComponentRegistrar::MODULE,'."\n".
-                             '    \''. $vendorName .'_'. $sectionName.'\','."\n".
+                             '    \''. $vendorName .'_'. $moduleName.'\','."\n".
                              '    __DIR__'."\n".
                              ');'."\n".
                              ''."\n"
@@ -248,18 +278,15 @@ class MakeSystemConfig extends Command
 
             $readMeMd = [
                 'filename' => 'README.md',
-                'content' => "# ". $sectionName."\n".
+                'content' => "# ". $moduleName."\n".
                              "\n".
                              "## Introductio\n".
-                             $sectionName . " is a module for Magento 2. Enjoy !\n"
+                             $moduleName . " is a module for Magento 2. Enjoy !\n"
             ];
 
             $this->createFile($fullPath, $readMeMd);
 
             return true;
-        } else {
-            return false;
-        }
     }
 
     /**
@@ -267,26 +294,27 @@ class MakeSystemConfig extends Command
      * @param string $modulePath
      * @return bool
      */
-    private function isSystemXmlFileAlreadyExists(
+    private function isModuleAlreadyExisting(
         string $vendorPath,
-        string $fullPath,
-        OutputInterface $output
+        string $fullPath
     ) : bool {
         //Test if vendor's directory exists
         if (!file_exists($vendorPath)) {
-            $output->writeln($vendorPath);
             mkdir($vendorPath);
         }
 
         //Tests if module's directory exists
         if (!file_exists($fullPath)) {
-            mkdir($fullPath);
-            mkdir($fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR);
+            if (!mkdir($fullPath) && !is_dir($fullPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $fullPath));
+            }
+            if (!mkdir($concurrentDirectory = $fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR) && !is_dir($concurrentDirectory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+            }
         } else {
-            $output->writeln('A module with the same name already exists');
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     private function createFile(string $path, array $data) : bool
