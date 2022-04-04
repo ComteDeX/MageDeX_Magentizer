@@ -2,14 +2,14 @@
 
 declare (strict_types=1);
 
-namespace {{namespace}}\Model\Config;
+namespace {{{vendor}}}\Model\Config;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 
 class Config
 {
-    {{properties}}
+    {{{properties}}}
     private ScopeConfigInterface $scopeConfig;
 
     public function __construct(
@@ -18,5 +18,5 @@ class Config
         $this->scopeConfig = $scopeConfig;
     }
 
-    {{methods}}
+    {{{methods}}}
 }

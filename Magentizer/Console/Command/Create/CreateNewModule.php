@@ -184,6 +184,13 @@ class CreateNewModule extends Command
         $vendorPath = $this->rootPath . self::APP_CODE . $vendorName;
         $fullPath = $vendorPath . '/' . $moduleName;
 
+
+//        $this->templatesModuleTemplatesComposer
+//        $this->templatesModuleTemplatesLicense
+//        $this->templatesModuleTemplatesReadme
+//        $this->templatesModuleTemplatesRegistration
+
+
         // etc/module.xml
             $moduleXml = [
                 'filename' => self::MODULE_XML,
@@ -306,6 +313,39 @@ class CreateNewModule extends Command
             return true;
         }
         return false;
+    }
+
+
+    private function getFilledTemplate(
+        string $template,
+        string $vendorName,
+        string $moduleName,
+        string $authorName,
+        string $license,
+        string $shortDescription,
+        string $keywords
+    ) : string {
+        return str_replace(
+            [
+                '{{{vendor}}}',
+                '{{{module}}}',
+                '{{{year}}}',
+                '{{{author}}}',
+                '{{{license}}}',
+                '{{{shortDescription}}}',
+                '{{{keywords}}}'
+            ],
+            [
+                $vendorName,
+                $moduleName,
+                date("Y"),
+                $authorName,
+                $license,
+                $shortDescription,
+                $keywords
+            ],
+            $template
+        );
     }
 
     private function createFile(string $path, array $data) : bool

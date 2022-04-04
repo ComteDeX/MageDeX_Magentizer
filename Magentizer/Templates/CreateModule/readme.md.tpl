@@ -1,4 +1,4 @@
-# {{{moduleFullName}}} for Magento 2
+# {{{module}}} for Magento 2
 
 ## Short description
 {{{shortDescription}}}

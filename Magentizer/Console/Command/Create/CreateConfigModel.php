@@ -208,7 +208,7 @@ class CreateConfigModel extends Command
 
             $configPathArray = explode('/', $configPath);
             $methods .= str_replace(
-                ['{{config}}','{{config_const}}'], [$this->toCamelCase(end($configPathArray)), $constName],
+                ['{{{config}}}','{{{config_const}}}'], [$this->toCamelCase(end($configPathArray)), $constName],
                 ($isBool) ? $this->templatesMethodIsMethod : $this->templatesMethodGetMethod
             );
         }
@@ -245,7 +245,7 @@ class CreateConfigModel extends Command
         $properties,
         $methods
     ) : string {
-        return str_replace(['{{namespace}}', '{{properties}}', '{{methods}}'],
+        return str_replace(['{{{vendor}}}', '{{{properties}}}', '{{{methods}}}'],
             [$vendorName . "\\" . $moduleName, $properties, $methods], $this->templatesClass);
     }
 

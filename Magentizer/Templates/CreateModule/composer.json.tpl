@@ -1,12 +1,16 @@
 {
     "name": "{{{vendor}}}/{{{module}}}",
+{{if shorDescription}}
     "description": "{{{shorDescription}}}",
+{{endif shorDescription}}
     "keywords": [
         "php",
         "magento",
         "magento2",
         "module",
+{{if keywords}}
         "extension"{{{keywords}}}
+{{endif keywords}}
     ],
     "require-dev": {
         "magento/magento-coding-standard": "^5",
