@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
+use MageDeX\Magentizer\Console\FinalClasses\SharedConstants;
 
 class CreateSystemConfig extends Command
 {
@@ -112,7 +113,7 @@ class CreateSystemConfig extends Command
         $this->setName(self::COMMAND_MAGENTIZER_CREATE_SYSTEM);
         $this->setDescription("Quickly create a system.xml, config.xml and config model class");
         $this->setDefinition([
-            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Author's Name for copyright data"),
+            new InputArgument(SharedConstants::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Author's Name for copyright data"),
             new InputArgument(self::SYSTEM_TAB, InputArgument::OPTIONAL, "Tab's Name"),
             new InputArgument(self::SYSTEM_SECTION, InputArgument::OPTIONAL, "Section's Name"),
             new InputArgument(self::SYSTEM_GROUP, InputArgument::OPTIONAL, "Group's name"),

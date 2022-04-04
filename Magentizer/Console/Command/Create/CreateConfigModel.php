@@ -2,40 +2,32 @@
 
 namespace MageDeX\Magentizer\Console\Command\Create;
 
+use DOMDocument;
+use Magento\Framework\App\Area;
+use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Filesystem\Directory\WriteFactory;
+use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Filesystem\DriverPool;
+use Magento\Framework\Module\Dir;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\Module\Dir;
-use Magento\Framework\Filesystem\Directory\WriteFactory;
-use Magento\Framework\App\Area;
-use Magento\Framework\Filesystem\DriverInterface;
-use DOMDocument;
+use MageDeX\Magentizer\Console\FinalClasses\SharedConstants;
 
 class CreateConfigModel extends Command
 {
     private const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:config-model';
-    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+
     private const MODULE_TEMPLATES_FILE = 'Templates/CreateConfigModel/CreateConfigModel.php.tpl';
     private const MODULE_TEMPLATES_METHODS_IS_METHOD = 'Templates/CreateConfigModel/MethodsTemplates/isMethod.php.tpl';
     private const MODULE_TEMPLATES_METHODS_GET_METHOD = 'Templates/CreateConfigModel/MethodsTemplates/getMethod.php.tpl';
 
-    private const VENDOR_NAME_ARGUMENT = "vendor's name";
-    private const MODULE_NAME_ARGUMENT = "module's name";
     private const SYSTEM_XML = "system.xml";
     private const MODEL_CONFIG_PATH = "Model/Config";
     private const MODEL_CONFIG_FILENAME = "Config.php";
 
     private const SYSTEM_CONFIG_PATH = "config_path";
-
-    public const RED="\033[31m";
-    public const YELLOW="\033[33m";
-    public const GREEN="\033[32m";
-    public const BLUE="\033[34m";
-    public const WHITE="\033[37m";
-    public const COLOR_NONE="\e[0m";
 
     protected DirectoryList     $directoryList;
     protected Dir               $directory;
@@ -74,7 +66,7 @@ class CreateConfigModel extends Command
         $this->driver = $driver;
         $this->domDocument = $domDocument;
         $this->rootPath = $this->directoryList->getRoot();
-        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
+        $this->moduleSelfPath = $this->directory->getDir(SharedConstants::MODULE_SELF_NAME);
         $this->templatesClass = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_FILE);
         $this->templatesMethodIsMethod = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_METHODS_IS_METHOD);
         $this->templatesMethodGetMethod = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_METHODS_GET_METHOD);
@@ -88,17 +80,17 @@ class CreateConfigModel extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        $vendorName = $input->getArgument(self::VENDOR_NAME_ARGUMENT);
-        $moduleName = $input->getArgument(self::MODULE_NAME_ARGUMENT);
+        $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
+        $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
 ;
         while (!$vendorName) {
-            $output->writeln(self::GREEN ."What Vendor name for this new module?". self::COLOR_NONE);
+            $output->writeln(self::GREEN ."What Vendor name for this new module?". SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $vendorName = trim(fgets($handle));
         }
 
         while (!$moduleName) {
-            $output->writeln(self::GREEN . "What Module name?" . self::COLOR_NONE);
+            $output->writeln(self::GREEN . "What Module name?" . SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $moduleName = trim(fgets($handle));
         }
@@ -114,8 +106,8 @@ class CreateConfigModel extends Command
         $this->setName(self::COMMAND_MAGENTIZER_CREATE_CONTROLLER);
         $this->setDescription("Create a Config Model Class for system.xml");
         $this->setDefinition([
-            new InputArgument(self::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
-            new InputArgument(self::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
+            new InputArgument(SharedConstants::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
+            new InputArgument(SharedConstants::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
         ]);
         parent::configure();
     }
@@ -157,7 +149,7 @@ class CreateConfigModel extends Command
         ]);
 
         if($this->driver->isExists($configClassFullPath)) {
-            echo $configClassPath. ".php file already exists. Exiting without writing anything.\n";
+            echo SharedConstants::RED . $configClassPath. ".php file already exists. Exiting without writing anything." . SharedConstants::COLOR_NONE ."\n";
             return false;
         }
 

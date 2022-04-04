@@ -14,28 +14,19 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\Directory\WriteFactory;
+use MageDeX\Magentizer\Console\FinalClasses\SharedConstants;
 
 class CreateNewModule extends Command
 {
     public const COMMAND_MAGENTIZER_CREATE_CONTROLLER = 'magentizer:create:module';
     public const APP_CODE = '/app/code/';
 
-    private const MODULE_SELF_NAME = 'MageDeX_Magentizer';
     private const MODULE_TEMPLATES_COMPOSER  = 'Templates/CreateModule/composer.json.tpl';
     private const MODULE_TEMPLATES_LICENSE = 'Templates/CreateModule/LICENSE.tpl';
     private const MODULE_TEMPLATES_README = 'Templates/CreateModule/readme.md.tpl';
     private const MODULE_TEMPLATES_REGISTRATION = 'Templates/CreateModule/registration.php.tpl';
 
-    private const VENDOR_NAME_ARGUMENT = "vendor's name";
-    private const MODULE_NAME_ARGUMENT = "module's name";
-    private const AUTHOR_NAME_ARGUMENT = "author's name";
-
-    private const RED="\033[31m";
-    private const YELLOW="\033[33m";
-    private const GREEN="\033[32m";
-    private const BLUE="\033[34m";
-    private const WHITE="\033[37m";
-    private const COLOR_NONE="\e[0m";
+    const MODULE_XML = 'module.xml';
 
     protected Reader            $moduleDirectory;
     protected DirectoryList     $directoryList;
@@ -65,7 +56,7 @@ class CreateNewModule extends Command
         $this->write = $write;
         $this->driver = $driver;
         $this->rootPath = $this->directoryList->getRoot();
-        $this->moduleSelfPath = $this->directory->getDir(self::MODULE_SELF_NAME);
+        $this->moduleSelfPath = $this->directory->getDir(SharedConstants::MODULE_SELF_NAME);
         $this->templatesModuleTemplatesComposer = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_COMPOSER);;
         $this->templatesModuleTemplatesLicense = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_LICENSE);;
         $this->templatesModuleTemplatesReadme = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_README);;
@@ -79,30 +70,30 @@ class CreateNewModule extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
-        $vendorName = $input->getArgument(self::VENDOR_NAME_ARGUMENT);
-        $moduleName = $input->getArgument(self::MODULE_NAME_ARGUMENT);
-        $authorName = $input->getArgument(self::AUTHOR_NAME_ARGUMENT);
+        $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
+        $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
+        $authorName = $input->getArgument(SharedConstants::AUTHOR_NAME_ARGUMENT);
 
         while (!$vendorName) {
-            $output->writeln(self::GREEN ."What Vendor name for this new module?". self::COLOR_NONE);
+            $output->writeln(SharedConstants::GREEN ."What Vendor name for this new module?". SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $vendorName = trim(fgets($handle));
         }
 
         $correctedVendorName = $this->cleanModuleName($vendorName);
         if ($correctedVendorName !== $vendorName) {
-            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: ". self::COLOR_NONE . $correctedVendorName);
+            $output->writeln(SharedConstants::RED . "Vendor's name has been modified this way to comply with PSR: ". SharedConstants::COLOR_NONE . $correctedVendorName);
         }
 
         while (!$moduleName) {
-            $output->writeln(self::GREEN . "What Module name?" . self::COLOR_NONE);
+            $output->writeln(SharedConstants::GREEN . "What Module name?" . SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $moduleName = trim(fgets($handle));
         }
 
         $correctedModuleName = $this->cleanModuleName($moduleName);
         if ($correctedModuleName !== $moduleName) {
-            $output->writeln(self::RED . "Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName . self::COLOR_NONE);
+            $output->writeln(SharedConstants::RED . "Vendor's name has been modified this way to comply with PSR: " . $correctedModuleName . SharedConstants::COLOR_NONE);
         }
 
         $vendorPath = $this->rootPath . self::APP_CODE . $vendorName;
@@ -112,21 +103,21 @@ class CreateNewModule extends Command
             $vendorName,
             $fullPath
         )) {
-            $output->writeln(self::RED . 'A module with the same name already exists!' . self::COLOR_NONE);
+            $output->writeln(SharedConstants::RED . 'A module with the same name already exists!' . SharedConstants::COLOR_NONE);
 
             return false;
         }
 
 
         if (!$authorName) {
-            $output->writeln(self::GREEN . "An author name for the copyright?" . self::COLOR_NONE);
+            $output->writeln(SharedConstants::GREEN . "An author name for the copyright?" . SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $authorName = trim(fgets($handle));
         }
 
         $license = false;
         if ($authorName !== '') {
-            $output->writeln(self::GREEN . "Add a MIT license file? [Y/n]" . self::COLOR_NONE);
+            $output->writeln(SharedConstants::GREEN . "Add a MIT license file? [Y/n]" . SharedConstants::COLOR_NONE);
             $handle = fopen("php://stdin", "r");
             $handle = trim(fgets($handle));
             switch (strtolower($handle)) {
@@ -140,7 +131,7 @@ class CreateNewModule extends Command
 
         if ($this->createModule($correctedVendorName, $correctedModuleName, $authorName, $license, $output)) {
             $output->writeln("Please welcome " . $correctedVendorName . "_" . $correctedModuleName . "!");
-            $output->writeln(self::BLUE . "Don’t forget to execute ". self::COLOR_NONE . "bin/magento setup:upgrade" . self::BLUE . " to make it work properly.");
+            $output->writeln(SharedConstants::BLUE . "Don’t forget to execute ". SharedConstants::COLOR_NONE . "bin/magento setup:upgrade" . self::BLUE . " to make it work properly.");
         }
     }
 
@@ -152,9 +143,9 @@ class CreateNewModule extends Command
         $this->setName(self::COMMAND_MAGENTIZER_CREATE_CONTROLLER);
         $this->setDescription("Quickly create a module without messing with bothering stuffs");
         $this->setDefinition([
-            new InputArgument(self::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
-            new InputArgument(self::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
-            new InputArgument(self::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "author's name"),
+            new InputArgument(SharedConstants::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
+            new InputArgument(SharedConstants::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
+            new InputArgument(SharedConstants::AUTHOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "author's name"),
         ]);
         parent::configure();
     }
@@ -195,7 +186,7 @@ class CreateNewModule extends Command
 
         // etc/module.xml
             $moduleXml = [
-                'filename' => 'module.xml',
+                'filename' => self::MODULE_XML,
                 'content' => '<?xml version="1.0"?>' . "\n" .
                              '<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'. "\n" .
                              '        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">'. "\n" .
