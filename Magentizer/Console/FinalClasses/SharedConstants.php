@@ -12,6 +12,7 @@ final class SharedConstants
     public const BLUE="\033[34m";
     public const WHITE="\033[37m";
     public const COLOR_NONE="\e[0m";
+    public const NEW_LINE_NO_STYLE= self::COLOR_NONE . "\n";
 
     public const MODULE_SELF_NAME = 'MageDeX_Magentizer';
     public const VENDOR_NAME_ARGUMENT = "vendor's name";
