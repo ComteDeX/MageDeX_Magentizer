@@ -56,7 +56,7 @@ class CreateNewModule extends Command
         $this->write = $write;
         $this->driver = $driver;
         $this->rootPath = $this->directoryList->getRoot();
-        $this->moduleSelfPath = $this->directory->getDir(SharedConstants::MODULE_SELF_NAME);
+        $this->moduleSelfPath = $this->directory->getDir(SharedConstants::MODULE_SELF_FULLNAME);
         $this->templatesModuleTemplatesComposer = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_COMPOSER);;
         $this->templatesModuleTemplatesLicense = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_LICENSE);;
         $this->templatesModuleTemplatesReadme = $this->driver->fileGetContents($this->moduleSelfPath . '/' . self::MODULE_TEMPLATES_README);;
@@ -298,7 +298,9 @@ class CreateNewModule extends Command
     ) : bool {
         //Test if vendor's directory exists
         if (!file_exists($vendorPath)) {
-            mkdir($vendorPath);
+            if (!mkdir($vendorPath) && !is_dir($vendorPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $vendorPath));
+            }
         }
 
         //Tests if module's directory exists

@@ -20,13 +20,6 @@ class CreateSystemConfig extends Command
     const SYSTEM_GROUP = 'group';
     const AUTHOR_NAME_ARGUMENT = "author's name";
 
-    const RED="\033[31m";
-    const YELLOW="\033[33m";
-    const GREEN="\033[32m";
-    const BLUE="\033[34m";
-    const WHITE="\033[37m";
-    const COLOR_NONE="\e[0m";
-
     /**
      * @var Reader
      */
@@ -276,13 +269,19 @@ class CreateSystemConfig extends Command
         //Test if vendor's directory exists
         if (!file_exists($vendorPath)) {
             $output->writeln($vendorPath);
-            mkdir($vendorPath);
+            if (!mkdir($vendorPath) && !is_dir($vendorPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $vendorPath));
+            }
         }
 
         //Tests if module's directory exists
         if (!file_exists($fullPath)) {
-            mkdir($fullPath);
-            mkdir($fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR);
+            if (!mkdir($fullPath) && !is_dir($fullPath)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $fullPath));
+            }
+            if (!mkdir($concurrentDirectory = $fullPath . '/' . \Magento\Framework\Module\Dir::MODULE_ETC_DIR) && !is_dir($concurrentDirectory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+            }
         } else {
             $output->writeln('A module with the same name already exists');
             return false;
