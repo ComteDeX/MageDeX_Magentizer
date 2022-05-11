@@ -14,7 +14,16 @@ final class SharedConstants
     public const COLOR_NONE="\e[0m";
     public const NEW_LINE_NO_STYLE= self::COLOR_NONE . "\n";
 
-    public const MODULE_SELF_NAME = 'MageDeX_Magentizer';
+    public const MODULE_SELF_VENDOR = 'MageDeX';
+    public const MODULE_SELF_MODULE_NAME = 'Magentizer';
+    public const MODULE_SELF_FULLNAME = 'MageDeX_Magentizer';
+    public const MODULE_SELF_DIRECTORY = 'MageDeX'. DIRECTORY_SEPARATOR .'Magentizer';
+
+    public const OPTION_ALL_ARGUMENT = "--all";
+    public const OPTION_ALL_ARGUMENT_SHORT = "-a";
+    public const OPTION_OVERWRITE_FILE_ARGUMENT = "--overwrite";
+    public const OPTION_OVERWRITE_FILE_ARGUMENT_SHORT = "-o";
+
     public const VENDOR_NAME_ARGUMENT = "vendor's name";
     public const MODULE_NAME_ARGUMENT = "module's name";
     public const AUTHOR_NAME_ARGUMENT = "author's name";
