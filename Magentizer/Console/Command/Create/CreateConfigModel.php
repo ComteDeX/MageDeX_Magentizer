@@ -373,9 +373,9 @@ class CreateConfigModel extends Command
                 } else {
                     $fields = $group['field'];
                 }
-                foreach ($fields as $subfieldKey => $field) {
-                    $key = isset($field["config_path"])
-                        ? $field["config_path"]
+                foreach ($fields as $field) {
+                    $key = isset($field[self::SYSTEM_CONFIG_PATH])
+                        ? $field[self::SYSTEM_CONFIG_PATH]
                         : implode('/', [
                             $section["@attributes"]['id'],
                             $group["@attributes"]['id'],
