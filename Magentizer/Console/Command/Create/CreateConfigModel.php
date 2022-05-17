@@ -29,11 +29,11 @@ class CreateConfigModel extends Command
 
     private const SYSTEM_CONFIG_PATH = "config_path";
 
-    protected DirectoryList     $directoryList;
-    protected Dir               $directory;
-    protected WriteFactory      $write;
-    protected DriverInterface   $driver;
-    protected DOMDocument       $domDocument;
+    protected DirectoryList $directoryList;
+    protected Dir $directory;
+    protected WriteFactory $write;
+    protected DriverInterface $driver;
+    protected DOMDocument $domDocument;
 
     protected $rootPath;
     private $moduleSelfPath;
@@ -43,12 +43,14 @@ class CreateConfigModel extends Command
 
     /**
      * CreateConfigModel constructor.
-     * @param DirectoryList $directoryList
-     * @param Dir $directory
-     * @param WriteFactory $write
+     *
+     * @param DirectoryList   $directoryList
+     * @param Dir             $directory
+     * @param WriteFactory    $write
      * @param DriverInterface $driver
-     * @param DOMDocument $domDocument
-     * @param string|null $name
+     * @param DOMDocument     $domDocument
+     * @param string|null     $name
+     *
      * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function __construct(
@@ -61,20 +63,20 @@ class CreateConfigModel extends Command
     ) {
         parent::__construct($name);
         $this->directoryList = $directoryList;
-        $this->directory = $directory;
-        $this->write = $write;
-        $this->driver = $driver;
-        $this->domDocument = $domDocument;
-        $this->rootPath = $this->directoryList->getRoot();
+        $this->directory     = $directory;
+        $this->write         = $write;
+        $this->driver        = $driver;
+        $this->domDocument   = $domDocument;
+        $this->rootPath      = $this->directoryList->getRoot();
 
         // TODO: refactor those 4 next operations
-        $this->moduleSelfPath = $this->directory->getDir(
+        $this->moduleSelfPath           = $this->directory->getDir(
             SharedConstants::MODULE_SELF_FULLNAME
         );
-        $this->templatesClass = $this->driver->fileGetContents(
+        $this->templatesClass           = $this->driver->fileGetContents(
             $this->moduleSelfPath . DIRECTORY_SEPARATOR . self::MODULE_TEMPLATES_FILE
         );
-        $this->templatesMethodIsMethod = $this->driver->fileGetContents(
+        $this->templatesMethodIsMethod  = $this->driver->fileGetContents(
             $this->moduleSelfPath . DIRECTORY_SEPARATOR . self::MODULE_TEMPLATES_METHODS_IS_METHOD
         );
         $this->templatesMethodGetMethod = $this->driver->fileGetContents(
@@ -92,7 +94,8 @@ class CreateConfigModel extends Command
         if ($input->getOption('all')) {
             $answer = false;
             while (!$answer) {
-                $output->writeln("<fg=yellow>Do you really want to create config files for all app/code modules ?</> [yes/NO]");
+                $output->writeln(
+                    "<fg=yellow>Do you really want to create config files for all app/code modules ?</> [yes/NO]");
                 $handle = fopen("php://stdin", "r");
                 $answer = trim(fgets($handle));
                 if (!$answer) {
@@ -100,7 +103,7 @@ class CreateConfigModel extends Command
                     break;
                 }
             }
-            if (in_array($answer, ['y','Y', 'yes', 'YES'])) {
+            if (in_array($answer, ['y', 'Y', 'yes', 'YES'])) {
                 // Get all app code module
                 $moduleList = $this->getAppCodeModuleList();
                 // Foreach execute creation
@@ -122,13 +125,13 @@ class CreateConfigModel extends Command
 
             while (!$vendorName) {
                 $output->writeln("<fg=yellow>What Vendor name for this new module?</>");
-                $handle = fopen("php://stdin", "r");
+                $handle     = fopen("php://stdin", "r");
                 $vendorName = trim(fgets($handle));
             }
 
             while (!$moduleName) {
                 $output->writeln("<fg=yellow>What Module name?</>");
-                $handle = fopen("php://stdin", "r");
+                $handle     = fopen("php://stdin", "r");
                 $moduleName = trim(fgets($handle));
             }
 
@@ -144,9 +147,11 @@ class CreateConfigModel extends Command
         $this->setName(self::COMMAND_MAGENTIZER_CREATE_CONTROLLER);
         $this->setDescription("Create a Config Model Class for system.xml");
         $this->setDefinition([
-            new InputArgument(SharedConstants::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
-            new InputArgument(SharedConstants::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
-        ]);
+                                 new InputArgument(
+                                     SharedConstants::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
+                                 new InputArgument(
+                                     SharedConstants::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
+                             ]);
         $this->addOption(
             SharedConstants::OPTION_ALL_ARGUMENT,
             SharedConstants::OPTION_ALL_ARGUMENT_SHORT,
@@ -157,14 +162,14 @@ class CreateConfigModel extends Command
             SharedConstants::OPTION_OVERWRITE_FILE_ARGUMENT_SHORT,
             null,
             "Overwrite file if existing"
-        )
-        ;
+        );
         parent::configure();
     }
 
     /**
      * @param string $vendorName
      * @param string $moduleName
+     *
      * @return bool
      * @throws \Magento\Framework\Exception\FileSystemException
      */
@@ -173,8 +178,8 @@ class CreateConfigModel extends Command
         string $moduleName,
         OutputInterface $output,
         array $options = []
-    ) : bool {
-        $vendorPath = $this->rootPath . '/app/code/' . $vendorName;
+    ): bool {
+        $vendorPath        = $this->rootPath . '/app/code/' . $vendorName;
         $systemXMLFullPath = implode('/', [
             $vendorPath,
             $moduleName,
@@ -185,6 +190,7 @@ class CreateConfigModel extends Command
 
         if (!$this->driver->isExists($systemXMLFullPath)) {
             echo "system.xml not found. Exiting without writing anything.\n";
+
             return false;
         }
 
@@ -193,7 +199,7 @@ class CreateConfigModel extends Command
             $moduleName,
             self::MODEL_CONFIG_PATH
         ]);
-        $configClassPath = implode('/', [
+        $configClassPath     = implode('/', [
             $vendorName,
             $moduleName,
             self::MODEL_CONFIG_PATH
@@ -203,23 +209,28 @@ class CreateConfigModel extends Command
         if ($this->driver->isExists($configClassFullPath)) {
             $overwrited = true;
             if (!$options['overwrite']) {
-                $output->writeln("<fg=red>" . $configClassPath .
+                $output->writeln(
+                    "<fg=red>" . $configClassPath .
                     ".php file already exists. Exiting without writing anything.</>");
+
                 return false;
             }
         }
 
-        $systemXML = json_decode(json_encode(simplexml_load_string($this->driver->fileGetContents($systemXMLFullPath))), true);
+        $systemXML = json_decode(
+            json_encode(simplexml_load_string($this->driver->fileGetContents($systemXMLFullPath))), true);
 
         $configPaths = $this->getConfigPaths($systemXML);
 
         if (!count($configPaths)) {
             echo "File does not seems to be correct. Exiting without writing anything.\n";
+
             return false;
         }
 
         if (!$this->createFile($configPaths, $vendorPath, $vendorName, $moduleName)) {
             echo "Something went wrong. Exiting without writing anything.\n";
+
             return false;
         }
         if ($overwrited) {
@@ -227,14 +238,16 @@ class CreateConfigModel extends Command
         } else {
             $output->writeln("<fg=green>Config file " . $configClassPath . " has been correctly created.</>");
         }
+
         return true;
     }
 
     /**
-     * @param array $configPaths
+     * @param array  $configPaths
      * @param string $vendorPath
      * @param string $vendorName
      * @param string $moduleName
+     *
      * @return bool
      */
     private function createFile(
@@ -242,17 +255,17 @@ class CreateConfigModel extends Command
         string $vendorPath,
         string $vendorName,
         string $moduleName
-    ) : bool {
+    ): bool {
         $properties = "\n";
-        $methods = "\n";
+        $methods    = "\n";
 
         foreach ($configPaths as $configPath => $isBool) {
-            $constName = mb_strtoupper(str_replace('/', '_', $configPath));
+            $constName  = mb_strtoupper(str_replace('/', '_', $configPath));
             $properties .= "    public const " . $constName . " ='" . $configPath . "';\n";
 
             $configPathArray = explode('/', $configPath);
-            $methods .= str_replace(
-                ['{{{config}}}','{{{config_const}}}'],
+            $methods         .= str_replace(
+                ['{{{config}}}', '{{{config_const}}}'],
                 [$this->toCamelCase(end($configPathArray)), $constName],
                 ($isBool) ? $this->templatesMethodIsMethod : $this->templatesMethodGetMethod
             );
@@ -271,6 +284,7 @@ class CreateConfigModel extends Command
             $newFile->writeFile(self::MODEL_CONFIG_FILENAME, $template);
         } catch (\Exception $e) {
             echo $e->getMessage();
+
             return false;
         }
 
@@ -280,8 +294,9 @@ class CreateConfigModel extends Command
     /**
      * @param string $vendorName
      * @param string $moduleName
-     * @param $properties
-     * @param $methods
+     * @param        $properties
+     * @param        $methods
+     *
      * @return string
      */
     private function getFilledTemplate(
@@ -289,7 +304,7 @@ class CreateConfigModel extends Command
         string $moduleName,
         $properties,
         $methods
-    ) : string {
+    ): string {
         return str_replace(
             ['{{{vendor}}}', '{{{properties}}}', '{{{methods}}}'],
             [$vendorName . "\\" . $moduleName, $properties, $methods],
@@ -299,16 +314,18 @@ class CreateConfigModel extends Command
 
     /**
      * @param string $stringToCamelCase
+     *
      * @return string
      */
     private function toCamelCase(
         string $stringToCamelCase
-    ) : string {
+    ): string {
         return str_replace(' ', '', ucwords(str_replace('_', ' ', $stringToCamelCase)));
     }
 
     /**
      * @param string $systemXMLFullPath
+     *
      * @return array
      * @throws \JsonException
      * @throws \Magento\Framework\Exception\FileSystemException
@@ -327,35 +344,50 @@ class CreateConfigModel extends Command
 
     /**
      * @param $systemXML
+     *
      * @return array
      */
     private function getConfigPaths($systemXML): array
     {
         $configPaths = [];
+
         if (!isset($systemXML['system']['section'])) {
             return $configPaths;
         }
 
-        foreach ($systemXML['system']['section'] as $sectionKey => $section) {
-            if ($sectionKey !== "group") {
-                continue;
+        // If there’s only one child
+        if (isset($systemXML['system']['section']['@attributes'])) {
+            $sections = [$systemXML['system']['section']];
+        } else {
+            $sections = $systemXML['system']['section'];
+        }
+
+        foreach ($sections as $section) {
+            // If there’s only one child
+            if (isset($section['group']['@attributes'])) {
+                $groups =  [$section['group']];
+            } else {
+                $groups =  $section['group'];
             }
-            foreach ($section as $groupsKey => $groups) {
-                unset($groups['label']);
-                foreach ($groups as $groupKey => $group) {
-                    if ($groupKey !== "field") {
-                        continue;
-                    }
-                    foreach ($group as $fieldKey => $field) {
-                        $key = isset($field["config_path"]) ? $field["config_path"] : implode('/', [
-                            $systemXML['system']['section']["@attributes"]['id'],
-                            $systemXML['system']['section']['group'][$groupsKey]["@attributes"]['id'],
+            foreach ($groups as $group) {
+                // If there’s only one child
+                if (isset($group['field']['@attributes'])) {
+                    $fields = [$group['field']];
+                } else {
+                    $fields = $group['field'];
+                }
+                foreach ($fields as $subfieldKey => $field) {
+                    $key = isset($field["config_path"])
+                        ? $field["config_path"]
+                        : implode('/', [
+                            $section["@attributes"]['id'],
+                            $group["@attributes"]['id'],
                             $field["@attributes"]['id']
                         ]);
+                        $configPaths[$key] = (isset($field["source_model"])
+                                              && $field["source_model"]
+                                                 === 'Magento\Config\Model\Config\Source\Yesno') ? 1 : 0;
 
-                        // 1 for bool, 0 for text and anything else
-                        $configPaths[$key] = (isset($field["source_model"]) && $field["source_model"] === 'Magento\Config\Model\Config\Source\Yesno') ? 1 : 0;
-                    }
                 }
             }
         }
@@ -366,18 +398,20 @@ class CreateConfigModel extends Command
     /**
      * @return array
      */
-    private function getAppCodeModuleList() : array
+    private function getAppCodeModuleList(): array
     {
-        $vendors = [];
-        $directories = glob($vendorPath = $this->rootPath . '/app/code/*' , GLOB_ONLYDIR);
-        foreach($directories as $directory) {
-            $modules = glob($directory . '/*' , GLOB_ONLYDIR);
+        $vendors     = [];
+        $directories = glob($vendorPath = $this->rootPath . '/app/code/*', GLOB_ONLYDIR);
+        foreach ($directories as $directory) {
+            $modules = glob($directory . '/*', GLOB_ONLYDIR);
 
             $arrayDirectory = explode(DIRECTORY_SEPARATOR, $directory);
-            foreach($modules as $module) {
-                if ($this->moduleSelfPath === $module) { continue; }
+            foreach ($modules as $module) {
+                if ($this->moduleSelfPath === $module) {
+                    continue;
+                }
 
-                $arrayModules = explode(DIRECTORY_SEPARATOR, $module);
+                $arrayModules                    = explode(DIRECTORY_SEPARATOR, $module);
                 $vendors[end($arrayDirectory)][] = end($arrayModules);
             }
         }
