@@ -91,11 +91,22 @@ class CreateConfigModel extends Command
         InputInterface $input,
         OutputInterface $output
     ) {
+        $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
+        $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
+
         if ($input->getOption('all')) {
+            if ($moduleName) {
+                $output->writeln(
+                    "<fg=red>\"all\" option is incomptible with a specific module. Please make a choice.</>"
+                );
+                exit;
+            }
             $answer = false;
             while (!$answer) {
+                $path = 'app/code';
+                $path .= $vendorName ? '/'.$vendorName : '';
                 $output->writeln(
-                    "<fg=yellow>Do you really want to create config files for all app/code modules ?</> [yes/NO]");
+                    "<fg=yellow>Do you really want to create config files for all {$path} modules ?</> [yes/NO]");
                 $handle = fopen("php://stdin", "r");
                 $answer = trim(fgets($handle));
                 if (!$answer) {
@@ -105,24 +116,21 @@ class CreateConfigModel extends Command
             }
             if (in_array($answer, ['y', 'Y', 'yes', 'YES'])) {
                 // Get all app code module
-                $moduleList = $this->getAppCodeModuleList();
+                $list = $this->getAppCodeModuleList($vendorName);
                 // Foreach execute creation
-                foreach ($moduleList as $vendorName) {
-                    foreach ($vendorName as $moduleName) {
+                foreach ($list as $vendorName => $moduleList) {
+                    foreach ($moduleList as $moduleName) {
                         $this->createConfigClass(
                             $vendorName,
                             $moduleName,
                             $output,
-                            $input->getOption('overwrite')
+                            $input->getOptions()
                         );
                     }
                 }
                 // Print created module each time
             }
         } else {
-            $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
-            $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
-
             while (!$vendorName) {
                 $output->writeln("<fg=yellow>What Vendor name for this new module?</>");
                 $handle     = fopen("php://stdin", "r");
@@ -148,15 +156,17 @@ class CreateConfigModel extends Command
         $this->setDescription("Create a Config Model Class for system.xml");
         $this->setDefinition([
                                  new InputArgument(
-                                     SharedConstants::VENDOR_NAME_ARGUMENT, InputArgument::OPTIONAL, "Vendor's Name"),
+                                     SharedConstants::VENDOR_NAME_ARGUMENT,
+                                     InputArgument::OPTIONAL, "Vendor's Name"),
                                  new InputArgument(
-                                     SharedConstants::MODULE_NAME_ARGUMENT, InputArgument::OPTIONAL, "Module's Name"),
+                                     SharedConstants::MODULE_NAME_ARGUMENT,
+                                     InputArgument::OPTIONAL, "Module's Name"),
                              ]);
         $this->addOption(
             SharedConstants::OPTION_ALL_ARGUMENT,
             SharedConstants::OPTION_ALL_ARGUMENT_SHORT,
             null,
-            "Create config files for all module in app/code if inexistant"
+            "Create config files for all module in app/code[/<vendor>]"
         )->addOption(
             SharedConstants::OPTION_OVERWRITE_FILE_ARGUMENT,
             SharedConstants::OPTION_OVERWRITE_FILE_ARGUMENT_SHORT,
@@ -167,10 +177,13 @@ class CreateConfigModel extends Command
     }
 
     /**
-     * @param string $vendorName
-     * @param string $moduleName
+     * @param string          $vendorName
+     * @param string          $moduleName
+     * @param OutputInterface $output
+     * @param array           $options
      *
      * @return bool
+     * @throws \JsonException
      * @throws \Magento\Framework\Exception\FileSystemException
      */
     private function createConfigClass(
@@ -189,8 +202,10 @@ class CreateConfigModel extends Command
         ]);
 
         if (!$this->driver->isExists($systemXMLFullPath)) {
-            echo "system.xml not found. Exiting without writing anything.\n";
-
+            $output->writeln("<fg=red>{$vendorName}"
+                             . DIRECTORY_SEPARATOR."{$moduleName}"
+                             . DIRECTORY_SEPARATOR."system.xml not found. Exiting without writing anything.</>"
+            );
             return false;
         }
 
@@ -205,9 +220,9 @@ class CreateConfigModel extends Command
             self::MODEL_CONFIG_PATH
         ]);
 
-        $overwrited = false;
+        $overwritten = false;
         if ($this->driver->isExists($configClassFullPath)) {
-            $overwrited = true;
+            $overwritten = true;
             if (!$options['overwrite']) {
                 $output->writeln(
                     "<fg=red>" . $configClassPath .
@@ -230,12 +245,8 @@ class CreateConfigModel extends Command
 
             return false;
         }
-        if ($overwrited) {
-            $output->writeln("<fg=green>Config file " . $configClassPath . " has been correctly overwrited.</>");
-        } else {
-            $output->writeln("<fg=green>Config file " . $configClassPath . " has been correctly created.</>");
-        }
-
+        $writeMethod = ($overwritten) ? "overwritten" : "created";
+        $output->writeln("<fg=green>Config file {$configClassPath} has been correctly {$writeMethod}.</>");
         return true;
     }
 
@@ -395,11 +406,14 @@ class CreateConfigModel extends Command
     /**
      * @return array
      */
-    private function getAppCodeModuleList(): array
+    private function getAppCodeModuleList(?string $vendorName): array
     {
         $vendors     = [];
-        $directories = glob($vendorPath = $this->rootPath . '/app/code/*', GLOB_ONLYDIR);
+        $directories = glob($this->rootPath . '/app/code/*', GLOB_ONLYDIR);
         foreach ($directories as $directory) {
+            if ($vendorName && !strpos($directory, $vendorName)) {
+                continue;
+            }
             $modules = glob($directory . '/*', GLOB_ONLYDIR);
 
             $arrayDirectory = explode(DIRECTORY_SEPARATOR, $directory);
@@ -408,7 +422,7 @@ class CreateConfigModel extends Command
                     continue;
                 }
 
-                $arrayModules                    = explode(DIRECTORY_SEPARATOR, $module);
+                $arrayModules = explode(DIRECTORY_SEPARATOR, $module);
                 $vendors[end($arrayDirectory)][] = end($arrayModules);
             }
         }
