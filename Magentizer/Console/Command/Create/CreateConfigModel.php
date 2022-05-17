@@ -217,10 +217,7 @@ class CreateConfigModel extends Command
             }
         }
 
-        $systemXML = json_decode(
-            json_encode(simplexml_load_string($this->driver->fileGetContents($systemXMLFullPath))), true);
-
-        $configPaths = $this->getConfigPaths($systemXML);
+        $configPaths = $this->getConfigPaths($this->getSystemXMLData($systemXMLFullPath));
 
         if (!count($configPaths)) {
             echo "File does not seems to be correct. Exiting without writing anything.\n";
