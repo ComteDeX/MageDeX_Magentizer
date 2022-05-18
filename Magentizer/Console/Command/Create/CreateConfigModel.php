@@ -93,6 +93,9 @@ class CreateConfigModel extends Command
     ) {
         $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
         $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
+        if (!$moduleName && $vendorNameContainModuleName = $this->isVendorNameContainModuleName($vendorName)) {
+            [$vendorName, $moduleName] = $vendorNameContainModuleName;
+        }
 
         if ($input->getOption('all')) {
             if ($moduleName) {
@@ -104,7 +107,7 @@ class CreateConfigModel extends Command
             $answer = false;
             while (!$answer) {
                 $path = 'app/code';
-                $path .= $vendorName ? '/'.$vendorName : '';
+                $path .= $vendorName ? '/' . $vendorName : '';
                 $output->writeln(
                     "<fg=yellow>Do you really want to create config files for all {$path} modules ?</> [yes/NO]");
                 $handle = fopen("php://stdin", "r");
@@ -128,9 +131,10 @@ class CreateConfigModel extends Command
                         );
                     }
                 }
-                // Print created module each time
             }
         } else {
+
+            // TODO : load all app/code module list to preemptive hint choice if not present is arguments
             while (!$vendorName) {
                 $output->writeln("<fg=yellow>What Vendor name for this new module?</>");
                 $handle     = fopen("php://stdin", "r");
@@ -202,10 +206,12 @@ class CreateConfigModel extends Command
         ]);
 
         if (!$this->driver->isExists($systemXMLFullPath)) {
-            $output->writeln("<fg=red>{$vendorName}"
-                             . DIRECTORY_SEPARATOR."{$moduleName}"
-                             . DIRECTORY_SEPARATOR."system.xml not found. Exiting without writing anything.</>"
+            $output->writeln(
+                "<fg=red>{$vendorName}"
+                . DIRECTORY_SEPARATOR . "{$moduleName}"
+                . DIRECTORY_SEPARATOR . "system.xml not found. Exiting without writing anything.</>"
             );
+
             return false;
         }
 
@@ -247,6 +253,7 @@ class CreateConfigModel extends Command
         }
         $writeMethod = ($overwritten) ? "overwritten" : "created";
         $output->writeln("<fg=green>Config file {$configClassPath} has been correctly {$writeMethod}.</>");
+
         return true;
     }
 
@@ -373,9 +380,9 @@ class CreateConfigModel extends Command
         foreach ($sections as $section) {
             // If there’s only one child
             if (isset($section['group']['@attributes'])) {
-                $groups =  [$section['group']];
+                $groups = [$section['group']];
             } else {
-                $groups =  $section['group'];
+                $groups = $section['group'];
             }
             foreach ($groups as $group) {
                 // If there’s only one child
@@ -385,16 +392,16 @@ class CreateConfigModel extends Command
                     $fields = $group['field'];
                 }
                 foreach ($fields as $field) {
-                    $key = isset($field[self::SYSTEM_CONFIG_PATH])
+                    $key               = isset($field[self::SYSTEM_CONFIG_PATH])
                         ? $field[self::SYSTEM_CONFIG_PATH]
                         : implode('/', [
                             $section["@attributes"]['id'],
                             $group["@attributes"]['id'],
                             $field["@attributes"]['id']
                         ]);
-                        $configPaths[$key] = (isset($field["source_model"])
-                                              && $field["source_model"]
-                                                 === 'Magento\Config\Model\Config\Source\Yesno') ? 1 : 0;
+                    $configPaths[$key] = (isset($field["source_model"])
+                                          && $field["source_model"]
+                                             === 'Magento\Config\Model\Config\Source\Yesno') ? 1 : 0;
 
                 }
             }
@@ -422,11 +429,23 @@ class CreateConfigModel extends Command
                     continue;
                 }
 
-                $arrayModules = explode(DIRECTORY_SEPARATOR, $module);
+                $arrayModules                    = explode(DIRECTORY_SEPARATOR, $module);
                 $vendors[end($arrayDirectory)][] = end($arrayModules);
             }
         }
 
         return $vendors;
+    }
+
+    private function isVendorNameContainModuleName(string $vendorName): ?array
+    {
+        $possibleSeparationChars = ['_','/','::'];
+
+        foreach ($possibleSeparationChars as $possibleSeparationChar) {
+            if (strpos($vendorName, $possibleSeparationChar)) {
+                return explode($possibleSeparationChar, $vendorName);
+            }
+        }
+        return null;
     }
 }
