@@ -93,7 +93,10 @@ class CreateConfigModel extends Command
     ) {
         $vendorName = $input->getArgument(SharedConstants::VENDOR_NAME_ARGUMENT);
         $moduleName = $input->getArgument(SharedConstants::MODULE_NAME_ARGUMENT);
-        if (!$moduleName && $vendorNameContainModuleName = $this->isVendorNameContainModuleName($vendorName)) {
+        if ($vendorName
+            && !$moduleName
+            && $vendorNameContainModuleName = $this->isVendorNameContainModuleName($vendorName)
+        ) {
             [$vendorName, $moduleName] = $vendorNameContainModuleName;
         }
 
